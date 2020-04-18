@@ -28,6 +28,13 @@ app.use(passport.session());
 
 app.use(flash());
 
+app.use(function (req, res, next) {
+  res.locals.success_msg = req.flash('success_msg');
+  res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
+  next();
+})
+
 //mongodb connection
 mongoose.connect("mongodb://localhost:27017/profilerDB", { useNewUrlParser: true });
 mongoose.set("useCreateIndex", true);
@@ -77,39 +84,44 @@ app.get("/success", function (req, res) {
 });
 
 app.post("/register", function (req, res) {
+  let errors = [];
   User.register({ username: req.body.username }, req.body.password, function (err, user) {
     if (err) {
       console.log(err);
       res.redirect("/register");
-    } else {
-      passport.authenticate("local", {
-        successRedirect: '/success',
-        failureRedirect: '/register',
-        failureFlash: 'Failed to register'
-      });
-      res.redirect("/success");
+    }
+    else {
+      User.findOne({ username: username }).then(user => {
+        if (user) {
+          errors.push({ msg: 'Email already exists' });
+          res.render('register', {
+            errors,
+            username,
+            password
+          }).catch(err => console.log(err));
+        } else {
+          const newUser = new User({
+            username,
+            password
+          });
+          newUser.save()
+            .then(user => {
+              req.flash('success_msg', 'You are now registered');
+              res.redirect('login');
+            })
+            .catch(err => console.log(err));
+        }
+      })
     }
   })
 });
 
-app.post("/login", function (req, res) {
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password
-  });
-
-  req.login(user, function (err) {
-    if (err) {
-      console.log(err);
-    } else {
-      passport.authenticate("local", {
-        successRedirect: '/success',
-        failureRedirect: '/login',
-        failureFlash: 'Invalid username or password'
-      });
-      res.redirect("/success");
-    }
-  })
+app.post("/login", function (req, res, next) {
+  passport.authenticate('local', {
+    successRedirect: '/success',
+    failureRedirect: '/login',
+    failureFlash: true
+  })(req, res, next);
 });
 
 
