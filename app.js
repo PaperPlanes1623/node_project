@@ -84,16 +84,17 @@ app.get("/success", function (req, res) {
 });
 
 app.post("/register", function (req, res) {
-  let errors = [];
   User.register({ username: req.body.username }, req.body.password, function (err, user) {
+    let errors = [];
     if (err) {
       console.log(err);
       res.redirect("/register");
     }
     else {
-      User.findOne({ username: username }).then(user => {
+      User.findOne({ user: user }).then(user => {
         if (user) {
           errors.push({ msg: 'Email already exists' });
+          // console.log(errors);
           res.render('register', {
             errors,
             username,
