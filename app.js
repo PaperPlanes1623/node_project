@@ -5,8 +5,9 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const passportLocalMongoose = require('passport-local-mongoose');
-const passportLocal = require('passport-local');
+// const localStrategy = require('passport-local').Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+const flash = require('connect-flash');
 
 const app = express();
 
@@ -16,8 +17,16 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 
+app.use(session({
+  secret: "secret",
+  resave: false,
+  saveUninitialized: false
+}));
+
 app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.session());
+
+app.use(flash());
 
 //mongodb connection
 mongoose.connect("mongodb://localhost:27017/profilerDB", { useNewUrlParser: true });
@@ -37,6 +46,8 @@ passport.use(User.createStrategy());
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
+
+// passport.use(new localStrategy(User.authenticate()));
 
 
 
@@ -76,6 +87,7 @@ app.post("/register", function (req, res) {
         failureRedirect: '/register',
         failureFlash: 'Failed to register'
       });
+      res.redirect("/success");
     }
   })
 });
@@ -95,6 +107,7 @@ app.post("/login", function (req, res) {
         failureRedirect: '/login',
         failureFlash: 'Invalid username or password'
       });
+      res.redirect("/success");
     }
   })
 });
